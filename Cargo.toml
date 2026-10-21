@@ -1,0 +1,12 @@
+[package]
+name = "continuum-runtime"
+version = "0.0.0"
+edition = "2021"
+description = "Scaffolding: a runtime that runs beam-quilt patches as sovereign processes over a chrono-tensor event stream, scheduled by triggers rather than polling. Speculative — see README."
+license = "MIT"
+
+# No dependencies yet. The first build (BUILD-BRIEF.md) should need only
+# the standard library plus the chrono-tensor event format definitions.
+
+[lib]
+path = "src/lib.rs"
