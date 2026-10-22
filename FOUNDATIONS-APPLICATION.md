@@ -64,38 +64,45 @@ SPECULATIVE** (mapping to this repo's settled / plausible / speculative).
   design problem — foundations found no prior art that closes it.
   Tag: **SPECULATIVE**, unchanged.
 
-## Open decisions — NOT settled by the foundations
+## Rulings and remaining open decisions
 
-### State model: stored sovereign state vs trajectory-only (Casey's ruling)
-This is the repo's headline open decision (ARCHITECTURE.md, "OPEN
-DECISION") and the foundations pass deliberately does not settle it — it
-verified the *stakes*: a trajectory-only runtime cannot keep P5's logs,
-cannot feed chrono-flight, and cannot produce auditable records.
+### State model — SUPERSEDED by the two-active-items foundation (Casey, 2026-10-21)
+The stored-state vs trajectory-only question is **closed — not by
+picking a side, but by Casey's restatement of the foundation**, which
+reframed what "state" is. (Full record: beam-quilt `FOUNDATIONS.md`,
+"Shelf foundations — the two active items"; SPEC v1.2 P4/P5.) Each
+patch holds an **active log** — its own dated readings from its own
+perspective, first-class truth *for it*, never another patch's to
+read — and crossings are **active ledger** entries booked SEND by the
+sender and RECEIVE by the receiver, with shared state existing only in
+the two sides' agreement. There is no stored state to defend and no
+trajectory-only store to adopt: `core/trajectory` is a reading of the
+active log over time, and `core/manifold` is bookkeeping over logs and
+agreed entries. Prior art for the split: **quilt-rooms** (2026-10-08).
 
-Sections that change under each ruling:
-- **Stored state (current position; SPEC P4/P5 as written):**
-  `core/trajectory` stays a derived view over stored history;
-  `core/manifold` stays bookkeeping; the Chronicle adaptation above
-  applies as written; BUILD-BRIEF's persistence acceptance test stands.
-- **Trajectory-only (requires a beam-quilt SPEC amendment FIRST — the
-  amendment leads, this repo follows):** `core/trajectory` becomes the
-  primary state representation and `core/manifold` must be redesigned
-  around it; P5 logging, the disagreement record, and the C3 stop test
-  lose their substrate and must be re-specified upstream; the Chronicle
-  and Temporal adaptations shrink to stream-only roles (no patch-local
-  stored log to tail or positionally check); chrono-flight's emitter
-  assumptions break (see its FOUNDATIONS-APPLICATION.md). Do not prototype
-  this branch in code before the ruling.
+What this settles for the adaptations above:
+- The Chronicle adaptation applies as written, now with its object
+  named correctly: the patch-local records its named tailers serve are
+  the patch's **active log** and its own side of the **active ledger**.
+- The Temporal discipline applies to the **agreed ledger entries**:
+  re-derivation is positionally checkable over entries both sides
+  booked, not over a state store.
+- BUILD-BRIEF's persistence acceptance test stands, re-read: what must
+  persist is each patch's log and ledger side — which is also exactly
+  what chrono-flight exists to record (see its
+  FOUNDATIONS-APPLICATION.md).
 
-### Deadband semantics (Casey's ruling: clarify vs abstain as fourth outcome)
-`seams/deadband` implements the band; the ruling decides its middle.
-- **Clarify-only:** an in-band event emits a clarification request onto
-  the stream; `core/weigh` counts holds-that-clarified.
-- **Abstain added:** an in-band event may also resolve as coast/no-act,
-  which `engine/loop` must treat as a terminal outcome for that trigger
-  (not a pending wake), `core/weigh` gains an abstain rate alongside
-  deadband/refusal rates, and `seams/entrainment` must not read a coasting
-  node's silence as cadence drift. None of this is built until ruled.
+### Deadband semantics — RULED (Casey, 2026-10-21; SPEC v1.1)
+The clarify-vs-abstain framing was rejected by Casey; the mechanism is
+the autopilot one. `seams/deadband` implements a receiver-held
+**(band, yaw-time)** pair: **Hold** inside the band, **HoldWatch** on an
+excursion within yaw-time, **Act(response)** only when an excursion
+persists beyond yaw-time. Clarify/narrow is one Act response among
+several, chosen by policy; coasting is inside-band Hold, not an
+outcome. `core/weigh` tallies excursions with durations and outcomes;
+`seams/entrainment` must not read a holding node's silence as cadence
+drift. Band edges are set by conformal calibration; band and yaw-time
+are context-set and learnable.
 
 ## Conflicts found against the verified foundations
 

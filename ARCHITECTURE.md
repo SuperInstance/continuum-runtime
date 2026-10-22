@@ -17,19 +17,26 @@ Layout synthesized from the Rust scaffold in `gemini21.md`.
   which patches exist, which seams are open, what the recent stream history
   is. *Need to know:* this is an index the runtime keeps for scheduling; it
   is **not** a shared state store patches read from — patches hold their own
-  state (P4). Confidence: **plausible** (the name is parked vocabulary; the
+  active log (P4). Confidence: **plausible** (the name is parked vocabulary; the
   bookkeeping need is real).
+  *Foundation mapping:* **log-side (derived)** — an index over patches'
+  active logs and the stream history; it holds no readings of its own.
 - **`trajectory`** — a patch's recent history of states and actions, kept
   as an ordered record so "where is this patch heading" (rate and direction
   of change) can be computed from what it has done. *Need to know:* this is
-  a view over stored history, **not** a replacement for stored state — see
-  the open decision below. Confidence: **plausible** as a derived view;
-  **speculative** as an ontology.
+  a reading of the patch's active log over time, **not** a rival store and
+  not a replacement for the log — see the foundation section below.
+  Confidence: **plausible** as a derived view; the trajectory-only ontology
+  is **superseded** (below).
+  *Foundation mapping:* **log-side** — a view over the active log, never
+  a store of its own.
 - **`weigh`** — per-seam and per-patch disagreement accounting: how often
   proposals land in the deadband, get refused, or get disputed, accumulated
   over time. *Need to know:* this is counters and rates over recorded seam
   outcomes. It is an input to scheduling priority and to operator reports —
   nothing more mystical. Confidence: **plausible**.
+  *Foundation mapping:* **ledger-side** — its inputs are booked seam
+  outcomes (agreed entries, refusals, disputes), not private readings.
 
 ### `src/nodes/`
 
@@ -55,13 +62,18 @@ Layout synthesized from the Rust scaffold in `gemini21.md`.
   timestamp/tick, provenance, declared cost. *Need to know:* the format is
   owned by `chrono-tensor` and constrained by SPEC T1–T3; this module is a
   consumer, not a designer, of the format. Confidence: **settled**.
-- **`deadband`** — the seam decision band: accept above the high mark,
-  refuse below the low mark, and in between, hold for clarification
-  (beam-quilt SPEC §3). *Need to know:* what "in between" triggers is
-  awaiting Casey's ruling (clarify-by-asking vs. abstain-and-coast are both
-  in the source material; v0 says clarify). This module implements the
-  band; the ruling decides its middle behaviour. Confidence: **settled**
-  that the band exists; **open** what the middle does.
+- **`deadband`** — the seam tolerance mechanism (beam-quilt SPEC §3,
+  v1.1; ruled by Casey 2026-10-21 on the autopilot doctrine): a
+  context-set, learnable **(band, yaw-time)** pair around the receiver's
+  predicted course. Inside the band → **Hold** (no adjustment; coasting
+  is this, not a separate outcome). Outside the band but within
+  yaw-time → **HoldWatch** (waves swing you out and back; do not steer
+  to them). Outside beyond yaw-time → **Act(response)**, the response
+  chosen by policy (accept-best, clarify/narrow, escalate). Confidence:
+  **settled**.
+  *Foundation mapping:* **ledger-side in effect** — its verdicts are seam
+  events at a crossing; its band/yaw-time parameters are held log-side,
+  in the receiver's own readings and calibration.
 - **`entrainment`** — cadence coordination. In plain words: **nodes
   periodically exchange small timing pulses and nudge their local cycle
   toward their neighbours'**, so a fleet that needs a shared rhythm can
@@ -69,6 +81,8 @@ Layout synthesized from the Rust scaffold in `gemini21.md`.
   an event on the stream; no node is obliged to match anyone. Confidence:
   **plausible** as a mechanism (periodic sync pulses are ordinary
   engineering); **speculative** that quilt scheduling needs it in v0.
+  *Foundation mapping:* **ledger-side** — pulses are transmissions booked
+  at the seam; any convergence is read afterwards from each node's log.
 
 ### `src/engine/`
 
@@ -78,6 +92,9 @@ Layout synthesized from the Rust scaffold in `gemini21.md`.
   never a polling timer and never a scheduler that assigns work a patch
   didn't subscribe to. Confidence: **plausible** (it is the runtime's
   defining choice; unbuilt).
+  *Foundation mapping:* **ledger-side** — it operates the ledger
+  discipline: it moves transmissions and appends their outcomes; it does
+  not read any patch's active log.
 - **`compiler`** — admission-time checking: when a patch is enrolled, verify
   its declared envelope types, trigger conditions, and constraint set are
   complete and satisfiable before it joins. *Need to know:* in plain words
@@ -125,31 +142,45 @@ conversations' strongest material — the fishing-fleet chapters — actually
 works). No weighting scheme is specified; any concrete formula is future
 work and must be argued, not inherited from the prose.
 
-## OPEN DECISION — trajectory state vs. stored state
+## FOUNDATION — the two active items (supersedes the stored-vs-trajectory question)
 
-**This conflict is unresolved. Do not resolve it in code. It is Casey's
-ruling to make.**
+**The old A/B question — stored sovereign state vs. trajectory-only
+state — is SUPERSEDED.** Casey's restatement of the SuperInstance
+foundation (2026-10-21; recorded in beam-quilt `FOUNDATIONS.md`,
+"Shelf foundations — the two active items," and absorbed into SPEC
+v1.2 P4/P5) dissolves the framing: state was never a store *or* a
+trajectory — a system is represented by **two active items**:
 
-- The continuum sources (`gemini20.md`, `gemini21.md`) claim state *is*
-  trajectory: a node is its velocity through time; stored static state is
-  declared undefined; "there is no database."
-- beam-quilt SPEC **P4** requires a patch to hold sovereign state, and
-  **P5** requires it to keep its own log of transmissions and decisions.
-  The seam rules, the disagreement record, and the C3 stop test all depend
-  on that stored record existing.
+- **Active log (SPEC P4).** Each patch/item holds its own readings of
+  every cell *from its own perspective*, each reading dated. Its
+  readings are first-class truth *for it*; there is no God's-eye view
+  and no shared state store. `core/trajectory` is a **reading of that
+  log over time** — rate and direction computed from the dated
+  readings — not a rival store and not a replacement for the log.
+- **Active ledger (SPEC P5).** What is shared exists **only** as
+  agreed ledger entries: a transmission is booked by the sender as a
+  SEND and by the receiver as a RECEIVE, under the contract
+  (algorithm) that governed the crossing, and only entries both sides
+  agree on count as shared. Shared state is never stored anywhere; it
+  exists in the agreement.
 
-A trajectory-only runtime **cannot keep P5's logs** — a velocity has no
-memory — and cannot produce the records chrono-flight exists to replay or
-an operator exists to audit. Accordingly, until Casey rules otherwise:
+Consequences for this runtime:
 
-- **This runtime stores.** Every patch's state and log are persisted by the
-  patch (via the `sovereign` wrapper's guarantees), and the stream itself
-  is append-only.
-- `core/trajectory` is a *derived view* over that stored history, useful
-  for scheduling and reporting — nothing more.
-- If a future ruling adopts trajectory-only state, P4/P5 and everything
-  built on them must be amended in beam-quilt first. The amendment leads;
-  this repo follows.
+- **This runtime persists logs and ledger sides, not "state."** Every
+  patch's active log and its own side of the active ledger are
+  persisted by the patch (via the `sovereign` wrapper's guarantees),
+  and the stream itself is append-only. The records chrono-flight
+  replays and an operator audits are the log and the agreed entries —
+  which is why the trajectory-only branch failed on its own terms: a
+  velocity has no memory, and there was never a store to defend
+  either.
+- **Prior art: `quilt-rooms`.** The named pair (`ACTIVE-LOG.md` /
+  `ACTIVE-LEDGER.md`), sovereign local sequence time, both-sides
+  record, and pending→agreed lifecycle are already implemented there
+  (2026-10-08) and are cited as the source of the split — tap the
+  vocabulary and sovereignty rules; its ledger agrees on *time*, so
+  the payload-transfer agreement (SPEC P5) remains this programme's
+  own work (beam-quilt FOUNDATIONS.md, gap 2).
 
 ## Parked vocabulary
 
