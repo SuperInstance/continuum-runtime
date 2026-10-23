@@ -39,8 +39,11 @@ side may refuse.
 - A boundary-driver node (if enrolled) can be demonstrated to have no
   privilege: an envelope from it is refused by a patch whose rules reject
   it, identically to any other sender.
-- The full run can be replayed through chrono-flight (or, until it
-  exists, diffed against the recorded stream file) event for event.
+- The full run can be played back through chrono-flight (or, until it
+  exists, diffed against the recorded stream file) event for event —
+  playback plus positionally checkable re-derivation of derived state.
+  Deterministic re-execution of decisions made by model-driven nodes
+  is not promised and not implied (chrono-flight's replay limit).
 
 ## Non-goals (do not build these)
 

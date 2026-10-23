@@ -110,8 +110,8 @@ are context-set and learnable.
    chrono-flight."** Read literally, this promises re-execution, which the
    verified foundations (Temporal discipline, above) and chrono-flight's
    own replay limit both reject. The compliant reading is *playback +
-   positionally checkable re-derivation*. Flagged as a wording conflict to
-   fix when BUILD-BRIEF is next revised; this file does not edit it.
+   positionally checkable re-derivation*. **Resolved 2026-10-22:**
+   BUILD-BRIEF.md now carries the compliant wording.
 2. **ARCHITECTURE.md:167 parked-vocabulary row** naming "Laman rigidity =
    truth" in order to reject it — checked in the foundations pass,
    correct as written, no change.
