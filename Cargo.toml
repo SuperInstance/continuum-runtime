@@ -1,12 +1,20 @@
 [package]
 name = "continuum-runtime"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
-description = "Scaffolding: a runtime that runs beam-quilt patches as sovereign processes over a chrono-tensor event stream, scheduled by triggers rather than polling. Speculative — see README."
+description = "A runtime that runs beam-quilt patches as sovereign processes over a chrono-tensor event stream, scheduled by triggers rather than polling. Slice 1: the stream core (see SLICE1-REPORT.md)."
 license = "MIT"
 
-# No dependencies yet. The first build (BUILD-BRIEF.md) should need only
-# the standard library plus the chrono-tensor event format definitions.
+# Dependencies: serde + serde_json only — JSONL stream/log records and
+# line-delimited child-process IPC; no other crates, no external services.
 
 [lib]
 path = "src/lib.rs"
+
+[[bin]]
+name = "continuum-runtime"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
