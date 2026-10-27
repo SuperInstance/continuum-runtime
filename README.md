@@ -14,14 +14,23 @@ another's state, and without a central scheduler that commands anyone.
 
 ## Status
 
-**Scaffolding / speculative.** This repo is a synthesized scaffold, not a
-design Casey has ratified and not working code. Its confidence is
-deliberately marked **lower than quilt-engine's**: quilt-engine implements
-reference semantics that were argued out in the open; this runtime
-extrapolates from the most speculative stretch of the source conversations
-(the "continuum" material in beam-quilt's `docs/proposed/gemini20–22.md`),
-including one conflict with the beam-quilt SPEC that is **unresolved** —
-see ARCHITECTURE.md, "Open decision: trajectory state vs. stored state."
+**Slice 1 built (the stream core); the rest remains speculative.**
+`cargo build && cargo test` runs a real slice: an append-only
+transmission stream, two patch processes as supervised children
+exchanging transmissions over it, the kill test (SIGKILL a patch and
+the runtime mid-run, restart, lose nothing — the resumed stream is
+event-for-event identical to a clean run's), and playback as a
+positional diff. See SLICE1-REPORT.md.
+
+The repo's overall confidence is still deliberately marked **lower than
+quilt-engine's**: quilt-engine implements reference semantics that were
+argued out in the open; this runtime extrapolates from the most
+speculative stretch of the source conversations (the "continuum"
+material in beam-quilt's `docs/proposed/gemini20–22.md`). The
+trajectory-vs-stored conflict named below was superseded before slice 1
+(see ARCHITECTURE.md, "FOUNDATION — the two active items"); the
+speculative label applies to what is *not* built yet: deadband,
+entrainment, jepa, the boundary driver's mechanism.
 
 Nothing here overrides the SPEC. Where this repo and the SPEC disagree, the
 SPEC wins until Casey rules otherwise.
@@ -53,11 +62,18 @@ ARCHITECTURE.md).
 
 ## Layout
 
+- `SLICE1-REPORT.md` — what slice 1 built, the kill-test evidence,
+  playback behaviour, and the precise gaps.
 - `ARCHITECTURE.md` — module map, need-to-knows, confidence marks, the
-  open state conflict, and the parked-vocabulary table.
+  two-active-items foundation, and the parked-vocabulary table.
 - `BUILD-BRIEF.md` — the smallest first build and its non-goals.
-- `src/` — module skeleton: `core/`, `nodes/`, `seams/`, `engine/`, each
-  with a one-line README. No implementation yet.
+- `src/` — `core/` (manifold), `nodes/` (sovereign, patch),
+  `seams/` (envelope), `engine/` (loop, compiler, playback), `stream.rs`
+  (the append-only stream); deadband/entrainment/jepa/boundary remain
+  README stubs.
+- `tests/slice1.rs` — the acceptance criteria as unattended tests,
+  including the kill test.
+- `scripts/kill-check.sh` — the kill test as a standalone transcript.
 
 ## Source material
 
